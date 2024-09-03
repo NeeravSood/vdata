@@ -44,6 +44,15 @@ def fetch_data(api_url=API_URL):
         logging.error(f"Error fetching data from API: {e}")
         return pd.DataFrame()  # Return an empty DataFrame on failure
 
+def fetch_data_from_db():
+    session = Session()
+    try:
+        # Perform database operations
+        result = session.execute("SELECT * FROM index_data;")  # Changed to 'index_data'
+        return result.fetchall()
+    finally:
+        session.close()
+        
 def normalize_column(df, column_name):
     """Normalize the column by min-max scaling."""
     min_val = df[column_name].min()
