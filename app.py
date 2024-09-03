@@ -5,13 +5,17 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import logging
 import streamlit as st
 import time
+from sqlalchemy import create_engine, sessionmaker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Environment variables for configuration
 API_URL = os.getenv("DATAUSA_API_URL", "https://datausa.io/about/api/")  # Default or override via env
-DATA_FILE_PATH = os.getenv("DATA_FILE_PATH", "index_data.csv")
+# Environment variable for database path or use a default
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///health_prosperity_index.db")
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
 
 def fetch_data(api_url=API_URL):
     try:
@@ -90,41 +94,34 @@ def update_data():
         df = calculate_index(df)
         if not df.empty:
             try:
-                # Save to a CSV file instead of a database
-                df.to_csv(DATA_FILE_PATH, index=False)
-                logging.info(f"Data updated successfully. File saved to {DATA_FILE_PATH}")
+                with Session() as session:
+                    df.to_sql('index_data', con=session.bind, if_exists='replace', index=False)
+                    session.commit()
+                logging.info("Data updated and saved successfully to SQL database.")
             except Exception as e:
-                logging.error(f"Error saving data to file: {e}")
-        else:
-            logging.warning("Index calculation failed; no data to save.")
-    else:
-        logging.warning("Data fetch failed; no data to process.")
-
+                logging.error(f"Error saving data to SQL database: {e}")
+                
 def schedule_task():
     scheduler = BackgroundScheduler()
     scheduler.add_job(update_data, 'interval', days=1)
     scheduler.start()
 
 def display_data():
-    # Retry mechanism to handle file access conflicts
     retries = 3
     for attempt in range(retries):
         try:
-            # Load data from the CSV file
-            df = pd.read_csv(DATA_FILE_PATH)
-            st.title("Health and Prosperity Index")
-            st.bar_chart(df.set_index('state')['index'])
-            break  # Exit the loop if successful
-        except FileNotFoundError:
-            st.error("Data file not found. Please run the update first.")
-            logging.error("Data file not found.")
+            with Session() as session:
+                df = pd.read_sql_table('index_data', con=session.bind)
+                st.title("Health and Prosperity Index")
+                st.bar_chart(df.set_index('state')['index'])
+                break  # Exit the loop if successful
         except Exception as e:
-            logging.error(f"Error loading data: {e}")
+            logging.error(f"Error loading data from SQL database: {e}")
             if attempt < retries - 1:
                 time.sleep(1)  # Wait before retrying
             else:
                 st.error(f"Error loading data after {retries} attempts: {e}")
-
+                
 if __name__ == '__main__':
     update_data()  # Ensure data is fetched and saved initially
     schedule_task()
