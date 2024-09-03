@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Environment variables for configuration
 API_URL = os.getenv("DATAUSA_API_URL", "https://datausa.io/about/api/")  # Default or override via env
 # Environment variable for database path or use a default
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///health_prosperity_index.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/healthindex")
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
