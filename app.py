@@ -10,7 +10,7 @@ import time
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Environment variables for configuration
-API_URL = os.getenv("DATAUSA_API_URL", "https://datausa.io/api/data?...")  # Default or override via env
+API_URL = os.getenv("DATAUSA_API_URL", "https://datausa.io/about/api/")  # Default or override via env
 DATA_FILE_PATH = os.getenv("DATA_FILE_PATH", "index_data.csv")
 
 def fetch_data(api_url=API_URL):
