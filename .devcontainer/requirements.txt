@@ -2,3 +2,5 @@ streamlit>=1.25.0
 pandas>=2.1.1
 requests>=2.31.0
 APScheduler>=3.10.1
+sqlalchemy
+psycopg2-binary
