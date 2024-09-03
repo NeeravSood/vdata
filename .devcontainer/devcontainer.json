@@ -2,7 +2,7 @@
   "name": "Health and Prosperity Index",
   "build": {
   "dockerfile": ".devcontainer/Dockerfile",
-  "context": "./.devcontainer"
+  "context": "."
 },
   "settings": {
     "terminal.integrated.defaultProfile.linux": "/bin/bash"
