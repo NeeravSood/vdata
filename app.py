@@ -1,17 +1,17 @@
 import os
 import requests
 import pandas as pd
-from sqlalchemy import create_engine, exc
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
 import streamlit as st
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Environment variables for configuration
 API_URL = os.getenv("DATAUSA_API_URL", "https://datausa.io/api/data?...")  # Default or override via env
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///health_prosperity_index.db")
+DATA_FILE_PATH = os.getenv("DATA_FILE_PATH", "index_data.csv")
 
 def fetch_data(api_url=API_URL):
     try:
@@ -90,11 +90,11 @@ def update_data():
         df = calculate_index(df)
         if not df.empty:
             try:
-                engine = create_engine(DB_URL)
-                df.to_sql('index_data', engine, if_exists='replace', index=False)
-                logging.info("Database updated successfully.")
-            except exc.SQLAlchemyError as e:
-                logging.error(f"Database error: {e}")
+                # Save to a CSV file instead of a database
+                df.to_csv(DATA_FILE_PATH, index=False)
+                logging.info(f"Data updated successfully. File saved to {DATA_FILE_PATH}")
+            except Exception as e:
+                logging.error(f"Error saving data to file: {e}")
         else:
             logging.warning("Index calculation failed; no data to save.")
     else:
@@ -106,15 +106,26 @@ def schedule_task():
     scheduler.start()
 
 def display_data():
-    try:
-        engine = create_engine(DB_URL)
-        df = pd.read_sql('index_data', engine)
-        st.title("Health and Prosperity Index")
-        st.bar_chart(df.set_index('state')['index'])
-    except exc.SQLAlchemyError as e:
-        st.error(f"Error retrieving data from database: {e}")
-        logging.error(f"Error retrieving data from database: {e}")
+    # Retry mechanism to handle file access conflicts
+    retries = 3
+    for attempt in range(retries):
+        try:
+            # Load data from the CSV file
+            df = pd.read_csv(DATA_FILE_PATH)
+            st.title("Health and Prosperity Index")
+            st.bar_chart(df.set_index('state')['index'])
+            break  # Exit the loop if successful
+        except FileNotFoundError:
+            st.error("Data file not found. Please run the update first.")
+            logging.error("Data file not found.")
+        except Exception as e:
+            logging.error(f"Error loading data: {e}")
+            if attempt < retries - 1:
+                time.sleep(1)  # Wait before retrying
+            else:
+                st.error(f"Error loading data after {retries} attempts: {e}")
 
 if __name__ == '__main__':
+    update_data()  # Ensure data is fetched and saved initially
     schedule_task()
     display_data()
