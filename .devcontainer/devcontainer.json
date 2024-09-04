@@ -1,16 +1,15 @@
 {
-  "name": "Health and Prosperity Index",
-  "build": {
-  "dockerfile": ".devcontainer/Dockerfile",
-  "context": "."
-},
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "/bin/bash"
+  "name": "Python & PostgreSQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+  "settings": { 
+    "terminal.integrated.shell.linux": "/bin/bash"
   },
   "extensions": [
-    "ms-python.python"
+    "ms-python.python",
+    "ms-azuretools.vscode-docker"
   ],
-  "forwardPorts": [8501],
   "postCreateCommand": "pip install -r requirements.txt",
   "remoteUser": "root"
 }
